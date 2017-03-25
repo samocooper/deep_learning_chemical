@@ -1,5 +1,7 @@
+import sys
 import numpy as np
 from scipy.sparse import csc_matrix
+from scipy.cluster.vq import whiten, kmeans
 
 
 def read_file(f, func):
@@ -37,6 +39,7 @@ class CompoundNormalization(object):
                 self.compounds.add(compound)
 
 
+
 # Go through file
 # For every compound add row
 # for every feat add col and val (1)
@@ -57,7 +60,8 @@ if __name__ == '__main__':
     row = []
     c = 0
     data = []
-    with open("chemical_features.txt") as infile:
+
+    with open(sys.argv[1]) as infile:
         for line in infile:
             if line.split()[0] == 'compound':
                 continue
@@ -75,12 +79,18 @@ if __name__ == '__main__':
                 num_compounds += 1
 
             data.append(1)
-            col.append(feat)
-            row.append(num_compounds)
+            col.append(feat - 1)
+            row.append(num_compounds - 1)
 
     print(len(data))
     print(len(row))
     print(len(col))
-    csc_matrix((np.array(data), (np.array(row), np.array(col))), shape=(2532167, 651058))
+    matrix = csc_matrix((np.array(data), (np.array(row), np.array(col))))
+
+    whitened = whiten(matrix)
+
+
+
+    # , shape=(651058, 2532167)
 
 # Find common features
