@@ -1,0 +1,12 @@
+version: '2'
+services:
+
+  mapper:
+    image: floydhub/dl-docker:cpu
+    command: python compounds.py
+    working_dir: /opt
+    volumes:
+      - .:/opt
+    ports:
+      - 8888:8888
+      - 6006:6006
