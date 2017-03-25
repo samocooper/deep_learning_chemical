@@ -1,9 +1,4 @@
-from __future__ import print_function
-
-__docformat__ = 'restructedtext en'
-
-import six.moves.cPickle as pickle
-import gzip
+import _pickle
 import os
 import sys
 import timeit
@@ -109,7 +104,7 @@ class LogisticRegression(object):
         # LP[n-1,y[n-1]]] and T.mean(LP[T.arange(y.shape[0]),y]) is
         # the mean (across minibatch examples) of the elements in v,
         # i.e., the mean log-likelihood across the minibatch.
-        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        return -T.mean(T.log(self.p_y_given_x)[y])
         # end-snippet-2
 
     def errors(self, y):
@@ -138,118 +133,44 @@ class LogisticRegression(object):
 
 
 def load_data(dataset):
-    ''' Loads the dataset
 
-    :type dataset: string
-    :param dataset: the path to the dataset (here MNIST)
-    '''
-
-    #############
-    # LOAD DATA #
-    #############
-
-    # Download the MNIST dataset if it is not present
-    data_dir, data_file = os.path.split(dataset)
-    if data_dir == "" and not os.path.isfile(dataset):
-        # Check if dataset is in the data directory.
-        new_path = os.path.join(
-            os.path.split(__file__)[0],
-            "..",
-            "data",
-            dataset
-        )
-        if os.path.isfile(new_path) or data_file == 'mnist.pkl.gz':
-            dataset = new_path
-
-    if (not os.path.isfile(dataset)) and data_file == 'mnist.pkl.gz':
-        from six.moves import urllib
-        origin = (
-            'http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz'
-        )
-        print('Downloading data from %s' % origin)
-        urllib.request.urlretrieve(origin, dataset)
-
-    print('... loading data')
-
-    # Load the dataset
-    with gzip.open(dataset, 'rb') as f:
-        try:
-            train_set, valid_set, test_set = pickle.load(f, encoding='latin1')
-        except:
-            train_set, valid_set, test_set = pickle.load(f)
-    # train_set, valid_set, test_set format: tuple(input, target)
-    # input is a numpy.ndarray of 2 dimensions (a matrix)
-    # where each row corresponds to an example. target is a
-    # numpy.ndarray of 1 dimension (vector) that has the same length as
-    # the number of rows in the input. It should give the target
-    # to the example with the same index in the input.
-
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
-        data_x, data_y = data_xy
-        shared_x = theano.shared(numpy.asarray(data_x,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        shared_y = theano.shared(numpy.asarray(data_y,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets ous get around this issue
-        return shared_x, T.cast(shared_y, 'int32')
-
-    test_set_x, test_set_y = shared_dataset(test_set)
-    valid_set_x, valid_set_y = shared_dataset(valid_set)
-    train_set_x, train_set_y = shared_dataset(train_set)
-
-    rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
-            (test_set_x, test_set_y)]
-    return rval
+    data_x = _pickle.load(open('x_activity.pkl', 'rb'))
+    data_y = _pickle.load(open('y_activity.pkl', 'rb'))
+    data_y[data_y < 0] = 0
+    data_y = data_y[:,0]
 
 
-def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
-                           dataset='mnist.pkl.gz',
-                           batch_size=600):
-    """
-    Demonstrate stochastic gradient descent optimization of a log-linear
-    model
+    split = round(data_x.shape[0] - (data_x.shape[0]/9))
 
-    This is demonstrated on MNIST.
+    train_set_x = theano.shared(numpy.asarray(data_x[:split, :],
+                                           dtype=theano.config.floatX),
+                             borrow=True)
+    train_set_y = theano.shared(numpy.asarray(data_y[:split],
+                                           dtype=theano.config.floatX),
+                             borrow=True)
 
-    :type learning_rate: float
-    :param learning_rate: learning rate used (factor for the stochastic
-                          gradient)
+    valid_set_x = theano.shared(numpy.asarray(data_x[split:, :],
+                                              dtype=theano.config.floatX),
+                                borrow=True)
+    valid_set_y = theano.shared(numpy.asarray(data_y[split:],
+                                              dtype=theano.config.floatX),
+                                borrow=True)
+    train_set_y = T.cast(train_set_y, 'int32')
+    valid_set_y = T.cast(valid_set_y, 'int32')
 
-    :type n_epochs: int
-    :param n_epochs: maximal number of epochs to run the optimizer
+    return [train_set_x, train_set_y, valid_set_x, valid_set_y, data_x.shape[1]]
 
-    :type dataset: string
-    :param dataset: the path of the MNIST dataset file from
-                 http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz
+def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
+                           dataset='mnist.pkl',
+                           batch_size=2000):
 
-    """
-    datasets = load_data(dataset)
+    train_set_x, train_set_y, valid_set_x, valid_set_y,n_in = load_data(dataset)
 
-    train_set_x, train_set_y = datasets[0]
-    valid_set_x, valid_set_y = datasets[1]
-    test_set_x, test_set_y = datasets[2]
 
     # compute number of minibatches for training, validation and testing
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
     n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
-    n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
-
+    print(n_train_batches)
     ######################
     # BUILD ACTUAL MODEL #
     ######################
@@ -265,7 +186,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
     # construct the logistic regression class
     # Each MNIST image has size 28*28
-    classifier = LogisticRegression(input=x, n_in=28 * 28, n_out=10)
+    classifier = LogisticRegression(input=x, n_in=n_in, n_out=2)
 
     # the cost we minimize during training is the negative log likelihood of
     # the model in symbolic format
@@ -273,14 +194,6 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
     # compiling a Theano function that computes the mistakes that are made by
     # the model on a minibatch
-    test_model = theano.function(
-        inputs=[index],
-        outputs=classifier.errors(y),
-        givens={
-            x: test_set_x[index * batch_size: (index + 1) * batch_size],
-            y: test_set_y[index * batch_size: (index + 1) * batch_size]
-        }
-    )
 
     validate_model = theano.function(
         inputs=[index],
@@ -318,6 +231,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     ###############
     # TRAIN MODEL #
     ###############
+
     print('... training the model')
     # early-stopping parameters
     patience = 5000  # look as this many examples regardless
@@ -363,34 +277,10 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
                 # if we got the best validation score until now
                 if this_validation_loss < best_validation_loss:
-                    #improve patience if loss improvement is good enough
-                    if this_validation_loss < best_validation_loss *  \
-                       improvement_threshold:
-                        patience = max(patience, iter * patience_increase)
-
-                    best_validation_loss = this_validation_loss
-                    # test it on the test set
-
-                    test_losses = [test_model(i)
-                                   for i in range(n_test_batches)]
-                    test_score = numpy.mean(test_losses)
-
-                    print(
-                        (
-                            '     epoch %i, minibatch %i/%i, test error of'
-                            ' best model %f %%'
-                        ) %
-                        (
-                            epoch,
-                            minibatch_index + 1,
-                            n_train_batches,
-                            test_score * 100.
-                        )
-                    )
 
                     # save the best model
                     with open('best_model.pkl', 'wb') as f:
-                        pickle.dump(classifier, f)
+                        _pickle.dump(classifier, f)
 
             if patience <= iter:
                 done_looping = True
@@ -418,7 +308,7 @@ def predict():
     """
 
     # load the saved model
-    classifier = pickle.load(open('best_model.pkl'))
+    classifier = _pickle.load(open('best_model.pkl'))
 
     # compile a predictor function
     predict_model = theano.function(
