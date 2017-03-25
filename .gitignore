@@ -1,0 +1,5 @@
+.idea
+.DS_Store
+activities_test.txt
+activities_train.txt
+chemical_features.txt
