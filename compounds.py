@@ -81,6 +81,6 @@ if __name__ == '__main__':
     print(len(data))
     print(len(row))
     print(len(col))
-    csc_matrix((data, (row, col)), shape=(2532167, 651058))
+    csc_matrix((np.array(data), (np.array(row), np.array(col))), shape=(2532167, 651058))
 
 # Find common features
