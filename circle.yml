@@ -1,0 +1,23 @@
+machine:
+  pre:
+    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+  node:
+    version: 6.4.0
+  services:
+    - docker
+
+dependencies:
+  override:
+    - echo skip
+
+test:
+  override:
+    - echo skip
+
+deployment:
+  master:
+    branch: master
+    commands:
+      - docker build -t Istar-Eldritch/deep-hack .
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push Istar-Eldritch/deep-hack
