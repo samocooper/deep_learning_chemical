@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix
 from scipy.cluster.vq import whiten, kmeans
 
 
@@ -85,9 +85,8 @@ if __name__ == '__main__':
     print(len(data))
     print(len(row))
     print(len(col))
-    matrix = csc_matrix((np.array(data), (np.array(row), np.array(col))))
+    matrix = csr_matrix(np.array(data), np.array(row), np.array(col))
 
-    whitened = whiten(matrix)
 
 
 
