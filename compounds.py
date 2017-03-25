@@ -41,14 +41,17 @@ class CompoundNormalization(object):
 # For every compound add row
 # for every feat add col and val (1)
 if __name__ == '__main__':
-    normalized = CompoundNormalization("chemical_features.txt")
-    print(normalized.max)
-    print(len(normalized.compounds))
-    max = normalized.max
-    num_compounds = len(normalized.compounds)
+    # normalized = CompoundNormalization("chemical_features.txt")
+    # print(normalized.max)
+    # print(len(normalized.compounds))
+    # max = normalized.max
+    # num_compounds = len(normalized.compounds)
+    #
 
     print('creating matrix...')
+    counter = 0
     compounds = set()
+    num_compounds = 0
     c_names = []
     col = []
     row = []
@@ -59,6 +62,9 @@ if __name__ == '__main__':
             if line.split()[0] == 'compound':
                 continue
 
+            counter += 1
+            if counter % 1000000 == 0:
+                print(counter)
             tmp = line.split()
             compound = tmp[0]
             feat = int(tmp[1].split('_')[1])
@@ -66,11 +72,15 @@ if __name__ == '__main__':
             if compound not in compounds:
                 compounds.add(compound)
                 c_names.append(compound)
+                num_compounds += 1
 
             data.append(1)
             col.append(feat)
-            row.append(len(compounds) - 1)
+            row.append(num_compounds)
 
-    csc_matrix((data, (row, col)), shape=(num_compounds, max))
+    print(len(data))
+    print(len(row))
+    print(len(col))
+    csc_matrix((data, (row, col)), shape=(2532167, 651058))
 
 # Find common features
