@@ -126,7 +126,7 @@ class LogisticRegression(object):
         if y.dtype.startswith('int'):
             # the T.neq operator returns a vector of 0s and 1s, where 1
             # represents a mistake in prediction
-            return T.mean(T.neq(self.y_pred, y))
+            return T.neq(self.y_pred, y)
         else:
             raise NotImplementedError()
 
@@ -137,6 +137,8 @@ def load_data(dataset):
 
     data_x = data['x_activity'][...]
     data_y = data['y_activity'][...]
+
+    data_x[data_x < 0] = 0
 
     data_y[data_y < 0] = 0
     data_y = data_y[:,1]
@@ -164,9 +166,9 @@ def load_data(dataset):
 
     return [train_set_x, train_set_y, valid_set_x, valid_set_y, data_x.shape[1]]
 
-def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
+def sgd_optimization_mnist(learning_rate= 0.1, n_epochs=100,
                            dataset='mnist.pkl',
-                           batch_size=1000):
+                           batch_size=250):
 
     train_set_x, train_set_y, valid_set_x, valid_set_y,n_in = load_data(dataset)
 
@@ -256,7 +258,7 @@ def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
 
     validation_losses = [validate_model(i)
                          for i in range(n_valid_batches)]
-    this_validation_loss = numpy.mean(validation_losses)
+    this_validation_loss = numpy.sum(validation_losses)
 
     print(n_train_batches,
               this_validation_loss * 1000.
@@ -277,16 +279,13 @@ def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
                 # compute zero-one loss on validation set
                 validation_losses = [validate_model(i)
                                      for i in range(n_valid_batches)]
-                this_validation_loss = numpy.mean(validation_losses)
+                this_validation_loss = numpy.sum(validation_losses)
 
                 print(train_cost,
                         n_train_batches,
                         this_validation_loss * 1000.
                 )
 
-            if patience <= iter:
-                done_looping = True
-                break
 
     end_time = timeit.default_timer()
     print(
