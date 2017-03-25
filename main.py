@@ -1,10 +1,9 @@
-import _pickle
 import os
 import sys
 import timeit
 
 import numpy
-
+import h5py
 import theano
 import theano.tensor as T
 
@@ -104,7 +103,7 @@ class LogisticRegression(object):
         # LP[n-1,y[n-1]]] and T.mean(LP[T.arange(y.shape[0]),y]) is
         # the mean (across minibatch examples) of the elements in v,
         # i.e., the mean log-likelihood across the minibatch.
-        return -T.mean(T.log(self.p_y_given_x)[y])
+        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
         # end-snippet-2
 
     def errors(self, y):
@@ -134,13 +133,18 @@ class LogisticRegression(object):
 
 def load_data(dataset):
 
-    data_x = _pickle.load(open('x_activity.pkl', 'rb'))
-    data_y = _pickle.load(open('y_activity.pkl', 'rb'))
+    data = h5py.File('data_matrix.hdf5','a')
+
+    data_x = data['x_activity'][...]
+    data_y = data['y_activity'][...]
+
     data_y[data_y < 0] = 0
-    data_y = data_y[:,0]
+    data_y = data_y[:,1]
 
 
     split = round(data_x.shape[0] - (data_x.shape[0]/9))
+
+    print(sum(data_y[split:]))
 
     train_set_x = theano.shared(numpy.asarray(data_x[:split, :],
                                            dtype=theano.config.floatX),
@@ -162,15 +166,13 @@ def load_data(dataset):
 
 def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
                            dataset='mnist.pkl',
-                           batch_size=2000):
+                           batch_size=1000):
 
     train_set_x, train_set_y, valid_set_x, valid_set_y,n_in = load_data(dataset)
-
 
     # compute number of minibatches for training, validation and testing
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
     n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
-    print(n_train_batches)
     ######################
     # BUILD ACTUAL MODEL #
     ######################
@@ -251,11 +253,23 @@ def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
 
     done_looping = False
     epoch = 0
+
+    validation_losses = [validate_model(i)
+                         for i in range(n_valid_batches)]
+    this_validation_loss = numpy.mean(validation_losses)
+
+    print(n_train_batches,
+              this_validation_loss * 1000.
+          )
+
     while (epoch < n_epochs) and (not done_looping):
         epoch = epoch + 1
+        train_cost = 0
         for minibatch_index in range(n_train_batches):
 
             minibatch_avg_cost = train_model(minibatch_index)
+            train_cost += minibatch_avg_cost
+
             # iteration number
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
@@ -265,22 +279,10 @@ def sgd_optimization_mnist(learning_rate=0.1, n_epochs=100,
                                      for i in range(n_valid_batches)]
                 this_validation_loss = numpy.mean(validation_losses)
 
-                print(
-                    'epoch %i, minibatch %i/%i, validation error %f %%' %
-                    (
-                        epoch,
-                        minibatch_index + 1,
+                print(train_cost,
                         n_train_batches,
-                        this_validation_loss * 100.
-                    )
+                        this_validation_loss * 1000.
                 )
-
-                # if we got the best validation score until now
-                if this_validation_loss < best_validation_loss:
-
-                    # save the best model
-                    with open('best_model.pkl', 'wb') as f:
-                        _pickle.dump(classifier, f)
 
             if patience <= iter:
                 done_looping = True
@@ -308,7 +310,6 @@ def predict():
     """
 
     # load the saved model
-    classifier = _pickle.load(open('best_model.pkl'))
 
     # compile a predictor function
     predict_model = theano.function(
