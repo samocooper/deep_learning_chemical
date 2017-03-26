@@ -107,7 +107,8 @@ def load_data(dataset):
     return [train_set_x, train_set_y, valid_set_x, valid_set_y, data_x.shape[1]]
 
 
-def sgd_optimization_mnist(learning_rate=5, n_epochs=21, dataset='mnist.pkl', batch_size=200):
+def sgd_optimization_mnist(learning_rate=5, n_epochs=15, dataset='mnist.pkl', batch_size=200):
+
     train_set_x, train_set_y, valid_set_x, valid_set_y, n_in = load_data(dataset)
 
     # compute number of minibatches for training, validation and testing
@@ -138,30 +139,12 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=21, dataset='mnist.pkl', ba
         rng=rng,
         input=x,
         n_in=n_in,
-        n_out=200
-    )
-    hiddenLayer2 = HiddenLayer(
-        rng=rng,
-        input=hiddenLayer1.output,
-        n_in=200,
-        n_out=200
-    )
-    hiddenLayer3 = HiddenLayer(
-        rng=rng,
-        input=hiddenLayer2.output,
-        n_in=200,
-        n_out=100
-    )
-    hiddenLayer4 = HiddenLayer(
-        rng=rng,
-        input=hiddenLayer3.output,
-        n_in=100,
         n_out=50
     )
 
-    classifier = LogisticRegression(input=hiddenLayer4.output, n_in=50, n_out=7)
-    params = hiddenLayer1.params + hiddenLayer2.params + hiddenLayer3.params + hiddenLayer4.params + classifier.params
-    momentum = hiddenLayer1.m + hiddenLayer2.m + hiddenLayer3.m + hiddenLayer4.m + classifier.m
+    classifier = LogisticRegression(input=hiddenLayer1.output, n_in=50, n_out=7)
+    params = hiddenLayer1.params + classifier.params
+    momentum = hiddenLayer1.m + classifier.m
 
     # the cost we minimize during training is the negative log likelihood of
     # the model in symbolic format
@@ -245,11 +228,12 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=21, dataset='mnist.pkl', ba
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
         if epoch % validation_frequency == 0:
-            # compute zero-one loss on validation set
-            validation_losses = [validate_model(i) for i in range(n_valid_batches)]
-            this_validation_loss = numpy.sum(validation_losses)
 
-            print(epoch, train_cost, this_validation_loss)
+            # compute zero-one loss on validation set
+            # validation_losses = [validate_model(i) for i in range(n_valid_batches)]
+            # this_validation_loss = numpy.sum(validation_losses)
+
+            print(epoch, train_cost)
         else:
             print(epoch, train_cost)
 
