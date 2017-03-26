@@ -78,15 +78,14 @@ class LogisticRegression(object):
 
 
         weights = []
-        biases = []
-        flag = False
+        b_values = numpy.zeros((n_out,), dtype=theano.config.floatX)
+
         for model in file:
             name_temp = model
             if name_temp.split()[0] == 'WC1':
                 weights.append(file[model][...])
             if name_temp.split()[0] == 'bC1':
-                biases.append(file[model][...])
-                flag = True
+                b_values = file[model][...]
 
         # Initialise weights add previous weights
 
@@ -101,11 +100,7 @@ class LogisticRegression(object):
 
         print(W_values.shape)
 
-        # initialize the biases b as a vector of n_out 0s
-        if flag:
-            b_values = biases[0]
-        else:
-            b_values = numpy.zeros((n_out,), dtype=theano.config.floatX)
+
         self.b = theano.shared(value=b_values, name='bC1 '+name, borrow=True)
 
         W_mask = numpy.zeros(W_values.shape, dtype=theano.config.floatX)
@@ -170,7 +165,7 @@ def load_data(hdf5_data, hdf5_test):
 
 
 def sgd_optimization_mnist(hdf5_name='hdf5_file.hdf5', name='_', learning_rate=5,
-                           n_epochs=5, batch_size=200, hdf5_data='_',
+                           n_epochs=15, batch_size=200, hdf5_data='_',
                            hdf5_test='_'):
 
     model_file = h5py.File(hdf5_name, 'a')
@@ -240,13 +235,10 @@ def sgd_optimization_mnist(hdf5_name='hdf5_file.hdf5', name='_', learning_rate=5
 
     gparams = [T.grad(cost, param) for param in params]
 
-    updates = []
-    for i in range(len(gparams)):
-        if len(params[i].get_value(borrow=True).shape) == 2:
-            param_i = (params[i], (params[i] - learning_rate * gparams[i] - momentum[i]) * masks[i])
-            moment_i = (momentum[i], (momentum[i] * 0.8 + learning_rate * gparams[i]) * masks[i])
-            updates.append(param_i)
-            updates.append(moment_i)
+    updates = [(param_i, (param_i - learning_rate * grad_i - moment_i) * mask) for param_i, grad_i, moment_i, mask in
+               zip(params, gparams, momentum,masks)] + \
+              [(moment_i, moment_i * 0.8 + learning_rate * grad_i) for moment_i, grad_i in
+               zip(momentum, gparams)]
 
     train_model = theano.function(
         inputs=[index],
@@ -277,8 +269,6 @@ def sgd_optimization_mnist(hdf5_name='hdf5_file.hdf5', name='_', learning_rate=5
     # TRAIN MODEL #
     ###############
 
-    print(params[0].name)
-    #print(params[0].get_value(borrow=True))
 
     print('... training the model')
 
@@ -327,7 +317,6 @@ def sgd_optimization_mnist(hdf5_name='hdf5_file.hdf5', name='_', learning_rate=5
                 del model_file[model]
 
         model_file.create_dataset(name=name_temp, data=param.get_value(borrow=True))
-
 
 if __name__ == '__main__':
     sgd_optimization_mnist(name='sam', hdf5_name='current_model_file.hdf5', hdf5_data='data_matrix.hdf5', hdf5_test='data_matrix_test.hdf5')
