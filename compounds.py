@@ -1,56 +1,40 @@
 import sys
 import numpy as np
-from scipy.sparse import csr_matrix
+import pickle
+from scipy.sparse import csc_matrix
 from scipy.cluster.vq import whiten, kmeans
+import os.path
+import threading
 
 
-def read_file(f, func):
-    with open(f) as infile:
+def find_dimensions(in_file):
+    num_features = 0
+    compounds = set()
+    counter = 0
+
+    with open(in_file) as infile:
         for line in infile:
-            func(line)
+            counter += 1
+            if counter % 1000000 == 0:
+                print(counter)
+            feat = line.split()[1]
+            tmp = feat.split('_')
+            if len(tmp) > 1:
+                n = int(tmp[1])
+                if n > num_features:
+                    num_features = n
+
+            compound = line.split()[0]
+            if compound != 'compound':
+                if compound not in compounds:
+                    compounds.add(compound)
+
+    num_compounds = len(compounds)
+
+    return num_compounds, num_features
 
 
-class CompoundNormalization(object):
-    def __init__(self, f):
-        self.max = 0
-        self.compounds = set()
-        self.counter = 0
-        self.run(f)
-
-    def run(self, f):
-        print("Finding number of compound features...")
-
-        read_file(f, self.create_compound_list)
-
-    def create_compound_list(self, line):
-        self.counter += 1
-        if self.counter % 1000000 == 0:
-            print(self.counter)
-        feat = line.split()[1]
-        tmp = feat.split('_')
-        if len(tmp) > 1:
-            n = int(tmp[1])
-            if n > self.max:
-                self.max = n
-
-        compound = line.split()[0]
-        if compound != 'compound':
-            if compound not in self.compounds:
-                self.compounds.add(compound)
-
-
-
-# Go through file
-# For every compound add row
-# for every feat add col and val (1)
-if __name__ == '__main__':
-    # normalized = CompoundNormalization("chemical_features.txt")
-    # print(normalized.max)
-    # print(len(normalized.compounds))
-    # max = normalized.max
-    # num_compounds = len(normalized.compounds)
-    #
-
+def build_matrix():
     print('creating matrix...')
     counter = 0
     compounds = set()
@@ -58,8 +42,9 @@ if __name__ == '__main__':
     c_names = []
     col = []
     row = []
-    c = 0
     data = []
+
+    shape = find_dimensions(sys.argv[1])
 
     with open(sys.argv[1]) as infile:
         for line in infile:
@@ -85,11 +70,59 @@ if __name__ == '__main__':
     print(len(data))
     print(len(row))
     print(len(col))
-    matrix = csr_matrix(np.array(data), np.array(row), np.array(col))
+
+    matrix = csc_matrix((np.array(data), (np.array(row), np.array(col))), shape=(shape[0], shape[1]))
+    pickle.dump(matrix, open('csc_matrix-{}.pkl'.format(sys.argv[1]), 'wb'))
+    return matrix
 
 
+def cluster(matrix):
+    whitened = whiten(matrix.todense())
+
+    # for x in range(25, 40):
+    #     means, distortion = kmeans(whitened, x)
+    #     print distortion
+
+    means, distortion = kmeans(whitened, 30)
+
+    pickle.dump(means, open('30means-{}.pkl'.format(sys.argv[1]), 'wb'))
+
+    return means, distortion
 
 
+def drop_empty(matrix):
+    print("Trying to remove empty columns...")
+
+    indices = np.nonzero(matrix)
+    columns_non_unique = indices[1]
+    unique_columns = sorted(set(columns_non_unique))
+    new_mat = matrix.tocsc()[:, unique_columns]
+    pickle.dump(new_mat, open('no_zero_cols-{}.pkl'.format(sys.argv[1]), 'wb'))
+    print 'Old shape: {}'.format(matrix.shape)
+    print 'New shape: {}'.format(new_mat.shape)
+    return new_mat
+
+
+def main():
+    if os.path.isfile('csc_matrix.pkl'):
+        matrix = pickle.load('csc_matrix-{}.pkl'.format(sys.argv[1]), 'rb')
+    else:
+        matrix = build_matrix()
+
+    new_mat = drop_empty(matrix)
+    cluster(new_mat)
+
+    # Threading:
+    # t1 = threading.Thread(target=drop_empty(matrix))
+    # t2 = threading.Thread(target=cluster(matrix))
+    #
+    # t1.start()
+    # t2.start()
+    #
+    # t1.join()
+    # t2.join()
     # , shape=(651058, 2532167)
 
-# Find common features
+
+if __name__ == '__main__':
+    main()
