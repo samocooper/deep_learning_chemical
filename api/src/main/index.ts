@@ -20,7 +20,7 @@ io.on('connection', (client) => {
     stream.pipe(fileStream);
     fileStream.on('close', () => {
       client.emit('file_uploaded', {name: fileName});
-      train(fileStream, fileName);
+      train(client, fileName);
     });
   });
 
@@ -35,10 +35,15 @@ io.on('connection', (client) => {
   });
 });
 
-function train(socketStream: any, fileName: string) {
+function train(socket: any, fileName: string) {
   console.log(`training ${fileName}`);
   const training = spawn('python', ['../main.py']);
   training.stdout.pipe(process.stdout);
   training.stderr.pipe(process.stderr);
-  socketStream.emit('training', training.stdout, training.stderr);
+  training.stdout.on('data', (data) => {
+    socket.emit('training', data.toString());
+  });
+  training.stderr.on('data', (data) => {
+    socket.emit('training', data.toString());
+  })
 }
