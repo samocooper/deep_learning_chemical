@@ -1,0 +1,9 @@
+dist
+
+# Dependencies
+node_modules
+typings
+
+# Webstorm/Mac files
+.idea
+.DS_Store
