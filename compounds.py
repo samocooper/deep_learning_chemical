@@ -5,6 +5,7 @@ from scipy.sparse import csc_matrix
 from scipy.cluster.vq import whiten, kmeans
 import os.path
 import threading
+from sklearn.decomposition import TruncatedSVD
 
 
 def find_dimensions(in_file):
@@ -103,6 +104,15 @@ def drop_empty(matrix):
     return new_mat
 
 
+def pca(matrix):
+    clf = TruncatedSVD(1000)
+    matrix_pca = clf.fit_transform(matrix)
+    pickle.dump(matrix_pca, open('PCA-' + sys.argv[1] + '.pkl'.format(sys.argv[1]), 'wb'))
+    print(str(matrix_pca.shape))
+    print(matrix_pca)
+    return matrix_pca
+
+
 def main():
     if os.path.isfile('csc_matrix' + sys.argv[1] + '.pkl'):
         matrix = pickle.load('csc_matrix-' + sys.argv[1] + '.pkl', 'rb')
@@ -110,7 +120,8 @@ def main():
         matrix = build_matrix()
 
     new_mat = drop_empty(matrix)
-    cluster(new_mat)
+    # cluster(new_mat)
+    pca(new_mat)
 
     # Threading:
     # t1 = threading.Thread(target=drop_empty(matrix))
