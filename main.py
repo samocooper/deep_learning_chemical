@@ -83,7 +83,7 @@ def load_data():
     data_x = data['x_activity'][...]
     data_y = data['y_activity'][...]
 
-    data_test = h5py.File('data_matrix_test.hdf5', 'a')
+    data_test = h5py.File('data_matrix_test2.hdf5', 'a')
 
     data_x_test = data_test['x_activity_test'][...]
     data_y_test = data_test['y_activity_test'][...]
@@ -180,7 +180,7 @@ def sgd_optimization_mnist(learning_rate=0.3, n_epochs=35,  batch_size=200):
     # TEST ROC AUC BEFORE TRAINING #
     ################################
 
-    data_test = h5py.File('data_matrix_test.hdf5', 'a')
+    data_test = h5py.File('data_matrix_test2.hdf5', 'a')
     data_y_test = data_test['y_activity_test'][...]
     data_y_test[data_y_test < 0] = 0
 
