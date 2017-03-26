@@ -242,7 +242,7 @@ def sgd_optimization_mnist(learning_rate=0.3, n_epochs=35,  batch_size=200):
 
     print('ROC AUC IS', roc_auc_score(data_y_test.flatten(), pred_y.flatten()))
 
-    f2 = h5py.File('y_pred.hdf5', 'a')
+    f2 = h5py.File('y_pred2.hdf5', 'a')
     f2.create_dataset('y_pred', data=pred_y)
 
 if __name__ == '__main__':
