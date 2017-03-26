@@ -104,7 +104,7 @@ def drop_empty(matrix):
 
 
 def main():
-    if os.path.isfile('csc_matrix.pkl'):
+    if os.path.isfile('csc_matrix' + sys.argv[1] + '.pkl'):
         matrix = pickle.load('csc_matrix-' + sys.argv[1] + '.pkl', 'rb')
     else:
         matrix = build_matrix()
