@@ -72,7 +72,7 @@ def build_matrix():
     print(len(col))
 
     matrix = csc_matrix((np.array(data), (np.array(row), np.array(col))), shape=(shape[0], shape[1]))
-    pickle.dump(matrix, open('csc_matrix-{}.pkl'.format(sys.argv[1]), 'wb'))
+    pickle.dump(matrix, open('csc_matrix-' + sys.argv[1] + '.pkl', 'wb'))
     return matrix
 
 
@@ -85,7 +85,7 @@ def cluster(matrix):
 
     means, distortion = kmeans(whitened, 30)
 
-    pickle.dump(means, open('30means-{}.pkl'.format(sys.argv[1]), 'wb'))
+    pickle.dump(means, open('30means-' + sys.argv[1] + '.pkl', 'wb'))
 
     return means, distortion
 
@@ -97,15 +97,15 @@ def drop_empty(matrix):
     columns_non_unique = indices[1]
     unique_columns = sorted(set(columns_non_unique))
     new_mat = matrix.tocsc()[:, unique_columns]
-    pickle.dump(new_mat, open('no_zero_cols-{}.pkl'.format(sys.argv[1]), 'wb'))
-    print 'Old shape: {}'.format(matrix.shape)
-    print 'New shape: {}'.format(new_mat.shape)
+    pickle.dump(new_mat, open('no_zero_cols-' + sys.argv[1] + '.pkl'.format(sys.argv[1]), 'wb'))
+    print('Old shape: ' + str(matrix.shape))
+    print('New shape: ' + str(new_mat.shape))
     return new_mat
 
 
 def main():
     if os.path.isfile('csc_matrix.pkl'):
-        matrix = pickle.load('csc_matrix-{}.pkl'.format(sys.argv[1]), 'rb')
+        matrix = pickle.load('csc_matrix-' + sys.argv[1] + '.pkl', 'rb')
     else:
         matrix = build_matrix()
 
