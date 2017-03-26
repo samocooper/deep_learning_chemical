@@ -19,8 +19,26 @@ function uploadListener(input, socket) {
     var stream = ss.createStream();
 
     // upload a file to the server.
-    ss(socket).emit('file', stream, {size: file.size});
+    var socketStream = ss(socket);
+    socketStream.emit('file', stream, {size: file.size});
     ss.createBlobReadStream(file).pipe(stream);
+
+    socket.on('file_uploaded', function() {
+      document.body.innerHTML = '';
+    });
+
+    socketStream.on('training', function(stdout, stderr) {
+      stdout.on('data', (data) => {
+        var content = document.body.innerHTML;
+        content = content + data.toString();
+        document.body.innerHTML = content;
+      });
+      stderr.on('data', (data) => {
+        var content = document.body.innerHTML;
+        content = content + data.toString();
+        document.body.innerHTML = content;
+      });
+    })
   });
 }
 

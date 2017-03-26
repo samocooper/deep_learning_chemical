@@ -38,6 +38,11 @@ io.on('connection', (client) => {
 function train(socketStream: any, fileName: string) {
   console.log(`training ${fileName}`);
   const process = exec('python ../main.py', (error, stdout, stderr) => {
-    socketStream.emit('training', stdout, stderr);
+    if (error) {
+      console.error(error);
+    }
+    else {
+      socketStream.emit('training', stdout, stderr);
+    }
   });
 }
