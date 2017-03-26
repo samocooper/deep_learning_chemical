@@ -37,7 +37,7 @@ io.on('connection', (client) => {
 
 function train(socket: any, fileName: string) {
   console.log(`training ${fileName}`);
-  const training = spawn('THEANO_FLAGS="cuda.root=/usr/local/cuda,device=cuda,floatX=float32" python', ['../main.py']);
+  const training = spawn('python', ['../main.py'], {env: {THEANO_FLAGS:"cuda.root=/usr/local/cuda,device=cuda,floatX=float32"}});
   training.stdout.pipe(process.stdout);
   training.stderr.pipe(process.stderr);
   training.stdout.on('data', (data) => {
