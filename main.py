@@ -103,7 +103,7 @@ def load_data():
     return [train_set_x, train_set_y, valid_set_x, valid_set_y, data_x.shape[1]]
 
 
-def sgd_optimization_mnist(learning_rate=5, n_epochs=15,  batch_size=200):
+def sgd_optimization_mnist(learning_rate=0.3, n_epochs=35,  batch_size=200):
 
     train_set_x, train_set_y, valid_set_x, valid_set_y, n_in = load_data()
 
@@ -213,15 +213,23 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=15,  batch_size=200):
             # iteration number
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
-        if epoch % validation_frequency == 0:
+        pred_y = numpy.zeros(data_y_test.shape)
+        for i in range(n_valid_batches):
+            cost, pred_y_temp = test_model(i)
+            pred_y[i * batch_size: (i + 1) * batch_size, :] = pred_y_temp
+
+        print('ROC AUC IS', roc_auc_score(data_y_test.flatten(), pred_y.flatten()))
+
+        #if epoch % validation_frequency == 0:
 
             # compute zero-one loss on validation set
             # validation_losses = [validate_model(i) for i in range(n_valid_batches)]
             # this_validation_loss = numpy.sum(validation_losses)
 
-            print(epoch, train_cost)
-        else:
-            print(epoch, train_cost)
+            #print(epoch, train_cost)
+        #else:
+
+            #print(epoch, train_cost)
 
     ################
     # TEST ROC AUC #
@@ -234,6 +242,8 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=15,  batch_size=200):
 
     print('ROC AUC IS', roc_auc_score(data_y_test.flatten(), pred_y.flatten()))
 
+    f2 = h5py.File('y_pred.hdf5', 'a')
+    f2.create_dataset('y_pred', data=pred_y)
 
 if __name__ == '__main__':
     sgd_optimization_mnist()
