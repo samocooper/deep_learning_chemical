@@ -27,17 +27,10 @@ function uploadListener(input, socket) {
       document.body.innerHTML = '';
     });
 
-    socketStream.on('training', function(stdout, stderr) {
-      stdout.on('data', (data) => {
-        var content = document.body.innerHTML;
-        content = content + data.toString();
-        document.body.innerHTML = content;
-      });
-      stderr.on('data', (data) => {
-        var content = document.body.innerHTML;
-        content = content + data.toString();
-        document.body.innerHTML = content;
-      });
+    socket.on('training', function (data) {
+      var content = document.body.innerHTML;
+      content = content + data.toString();
+      document.body.innerHTML = content;
     })
   });
 }

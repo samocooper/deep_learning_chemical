@@ -1,7 +1,7 @@
 
 import * as socket from 'socket.io';
 import { createWriteStream } from 'fs';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { Readable as ReadableStream } from 'stream';
 const ss = require('socket.io-stream');
 
@@ -20,7 +20,7 @@ io.on('connection', (client) => {
     stream.pipe(fileStream);
     fileStream.on('close', () => {
       client.emit('file_uploaded', {name: fileName});
-      train(fileStream, fileName);
+      train(client, fileName);
     });
   });
 
@@ -35,14 +35,15 @@ io.on('connection', (client) => {
   });
 });
 
-function train(socketStream: any, fileName: string) {
+function train(socket: any, fileName: string) {
   console.log(`training ${fileName}`);
-  const process = exec('python ../main.py', (error, stdout, stderr) => {
-    if (error) {
-      console.error(error);
-    }
-    else {
-      socketStream.emit('training', stdout, stderr);
-    }
+  const training = spawn('python', ['../main.py'], {env: {THEANO_FLAGS:"cuda.root=/usr/local/cuda,device=cuda,floatX=float32"}});
+  training.stdout.pipe(process.stdout);
+  training.stderr.pipe(process.stderr);
+  training.stdout.on('data', (data) => {
+    socket.emit('training', data.toString());
   });
+  training.stderr.on('data', (data) => {
+    socket.emit('training', data.toString());
+  })
 }
