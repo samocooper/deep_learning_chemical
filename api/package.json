@@ -1,0 +1,30 @@
+{
+  "name": "ts-playground",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/main/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "setup": "npm i && rm -fr dist && tsc",
+    "start": "node dist/main/index.js",
+    "test": "tape \"dist/test/**/*.js\"",
+    "startdev": "nodemon --watch src --watch package.json -e ts,json -q -x 'rm -fr dist && echo \"\\n============\\nCOMPILING...\\n============\\n\\n\" && tsc || return 0 && node dist/main/index.js'",
+    "testdev": "nodemon --watch src --watch package.json -e ts,json -q -x 'rm -fr dist && echo \"\\n============\\nCOMPILING...\\n============\\n\\n\" && tsc || return 0 && tape \"dist/test/**/*.js\"'"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^7.0.5",
+    "@types/socket.io": "^1.4.29",
+    "@types/tape": "^4.2.29",
+    "nodemon": "latest",
+    "tape": "^4.6.3",
+    "typescript": "latest"
+  },
+  "dependencies": {
+    "socket.io": "^1.7.3",
+    "socket.io-stream": "^0.9.1"
+  }
+}
