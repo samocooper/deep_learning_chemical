@@ -1,7 +1,3 @@
-import os
-import sys
-import timeit
-
 import numpy
 import h5py
 import theano
@@ -10,7 +6,7 @@ from sklearn.metrics import roc_auc_score
 
 
 class HiddenLayer(object):
-    def __init__(self, rng, input, n_in, n_out, W=None, b=None):
+    def __init__(self, rng, input, n_in, n_out):
         self.input = input
 
         W_values = numpy.asarray(
@@ -81,7 +77,7 @@ class LogisticRegression(object):
         return T.neq(self.y_pred > 0.5, y)
 
 
-def load_data(dataset):
+def load_data():
     data = h5py.File('data_matrix.hdf5', 'a')
 
     data_x = data['x_activity'][...]
@@ -107,9 +103,9 @@ def load_data(dataset):
     return [train_set_x, train_set_y, valid_set_x, valid_set_y, data_x.shape[1]]
 
 
-def sgd_optimization_mnist(learning_rate=5, n_epochs=15, dataset='mnist.pkl', batch_size=200):
+def sgd_optimization_mnist(learning_rate=5, n_epochs=15,  batch_size=200):
 
-    train_set_x, train_set_y, valid_set_x, valid_set_y, n_in = load_data(dataset)
+    train_set_x, train_set_y, valid_set_x, valid_set_y, n_in = load_data()
 
     # compute number of minibatches for training, validation and testing
 
@@ -153,14 +149,6 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=15, dataset='mnist.pkl', ba
     # compiling a Theano function that computes the mistakes that are made by
     # the model on a minibatch
 
-    validate_model = theano.function(
-        inputs=[index],
-        outputs=classifier.errors(y),
-        givens={
-            x: valid_set_x[index * batch_size: (index + 1) * batch_size],
-            y: valid_set_y[index * batch_size: (index + 1) * batch_size]
-        }
-    )
 
     test_model = theano.function(
         inputs=[index],
@@ -208,8 +196,6 @@ def sgd_optimization_mnist(learning_rate=5, n_epochs=15, dataset='mnist.pkl', ba
     ###############
 
     print('... training the model')
-
-    # early-stopping parameters
 
     validation_frequency = 10
     done_looping = False

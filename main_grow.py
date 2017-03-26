@@ -1,7 +1,3 @@
-import os
-import sys
-import timeit
-
 import numpy
 import h5py
 import theano
