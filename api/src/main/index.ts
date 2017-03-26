@@ -1,7 +1,7 @@
 
 import * as socket from 'socket.io';
 import { createWriteStream } from 'fs';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { Readable as ReadableStream } from 'stream';
 const ss = require('socket.io-stream');
 
@@ -37,12 +37,8 @@ io.on('connection', (client) => {
 
 function train(socketStream: any, fileName: string) {
   console.log(`training ${fileName}`);
-  const process = exec('python ../main.py', (error, stdout, stderr) => {
-    if (error) {
-      console.error(error);
-    }
-    else {
-      socketStream.emit('training', stdout, stderr);
-    }
-  });
+  const training = spawn('python', ['../main.py']);
+  training.stdout.pipe(process.stdout);
+  training.stderr.pipe(process.stderr);
+  socketStream.emit('training', training.stdout, training.stderr);
 }
