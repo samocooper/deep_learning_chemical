@@ -1,0 +1,18 @@
+version: '2'
+services:
+  app:
+    command: /bin/sh -c "npm i && npm run startdev"
+    image: node
+    working_dir: /opt
+    volumes:
+     - .:/opt
+    environment:
+      TERM: dumb
+  test:
+    command: /bin/sh -c "npm i && npm run testdev"
+    image: node
+    working_dir: /opt
+    volumes:
+     - .:/opt
+    environment:
+      TERM: dumb
